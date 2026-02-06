@@ -1,7 +1,7 @@
 .PHONY: run all build release test install clean
 
 run: build
-	./build/axigate -v
+	./build/axigate -c sample.conf
 	
 all: test
 

@@ -1,29 +1,56 @@
 #include <argp.h>
 #include <stdlib.h>
 #include <string.h>
+#include "common.h"
 #include "options.h"
 
 static struct argp_option options[] = {
-    {OPT_VERBOSE, OPT_SHORT_VERBOSE, 0, 0, "Enable verbose output", 0},
-    {OPT_NUMBER, OPT_SHORT_NUMBER, "NUM", 0, "A number (default: 42)", 0},
-    {OPT_STRING, OPT_SHORT_STRING, "STR", 0, "A string", 0},
+    {OPT_CONFIG, OPT_SHORT_CONFIG, "FILE", 0, "Configuration file", 0},
+    {OPT_HOST, OPT_SHORT_HOST, "HOST", 0, "TNC host address", 1},
+    {OPT_PORT, OPT_SHORT_PORT, "PORT", 0, "TNC port (default: 8144)", 1},
+    {OPT_SOCKET, OPT_SHORT_SOCKET, "PATH", 0, "Unix socket path", 1},
+
+    {OPT_CALL, OPT_SHORT_CALL, "CALL", 0, "Digipeater callsign", 2},
+    {OPT_SSID, OPT_SHORT_SSID, "SSID", 0, "Digipeater SSID", 2},
+
+    {OPT_VERBOSE, OPT_SHORT_VERBOSE, 0, 0, "Verbose logs", 4},
+    {"debug", OPT_SHORT_DEBUG, 0, 0, "Debug logs (very verbose)", 4},
+
+    {OPT_DRY_RUN, OPT_SHORT_DRY_RUN, 0, 0, "Don't actually send packets, just log them", 5},
+
     {0, 0, 0, 0, 0, 0}};
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
     options_t *opts = state->input;
-
     switch (key)
     {
+    case OPT_SHORT_CONFIG:
+        strncpy(opts->config_file, arg, sizeof(opts->config_file) - 1);
+        break;
+    case OPT_SHORT_HOST:
+        strncpy(opts->host, arg, sizeof(opts->host) - 1);
+        break;
+    case OPT_SHORT_PORT:
+        opts->port = atoi(arg);
+        break;
+    case OPT_SHORT_SOCKET:
+        strncpy(opts->socket, arg, sizeof(opts->socket) - 1);
+        break;
+    case OPT_SHORT_CALL:
+        strncpy(opts->call, arg, sizeof(opts->call) - 1);
+        break;
+    case OPT_SHORT_SSID:
+        opts->ssid = atoi(arg);
+        break;
     case OPT_SHORT_VERBOSE:
-        opts->verbose = true;
+        opts->log_level = LOG_LEVEL_VERBOSE;
         break;
-    case OPT_SHORT_NUMBER:
-        opts->number = atoi(arg);
+    case OPT_SHORT_DEBUG:
+        opts->log_level = LOG_LEVEL_DEBUG;
         break;
-    case OPT_SHORT_STRING:
-        strncpy(opts->string, arg, OPT_STR_SIZE - 1);
-        opts->string[OPT_STR_SIZE - 1] = '\0';
+    case OPT_SHORT_DRY_RUN:
+        opts->dry_run = true;
         break;
     case ARGP_KEY_NO_ARGS:
         break;
@@ -33,16 +60,17 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
     return 0;
 }
 
-static struct argp argp = {
+struct argp argp = {
     options,
     parse_opt,
     "",
-    "Template project with CLI argument parsing"};
+    "AX.25 <> APRS-IS bidirectional gateway"};
 
 void opts_parse_args(options_t *opts, int argc, char *argv[])
 {
-    if (!opts || argc == 0 || !argv)
-        return;
+    nonnull(opts, "opts");
+    nonzero(argc, "argc");
+    nonnull(argv, "argv");
 
     argp_parse(&argp, argc, argv, 0, 0, opts);
 }

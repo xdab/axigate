@@ -2,19 +2,23 @@
 
 void opts_init(options_t *opts)
 {
-    if (!opts)
-        return;
+    nonnull(opts, "opts");
 
-    opts->verbose = false;
-    opts->number = 0;
-    opts->string[0] = '\0';
+    opts->config_file[0] = '\0';
+    opts->host[0] = '\0';
+    opts->port = 0;
+    opts->socket[0] = '\0';
+
+    opts->call[0] = '\0';
+    opts->ssid = 0;
+
+    opts->log_level = LOG_LEVEL_STANDARD;
+    opts->dry_run = false;
 }
 
 void opts_defaults(options_t *opts)
 {
-    if (!opts)
-        return;
+    nonnull(opts, "opts");
 
-    if (opts->number == 0)
-        opts->number = 42;
+    REPLACE_IF_a_WITH_b(opts->port, 0, 8144);
 }
