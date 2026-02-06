@@ -1,7 +1,7 @@
 .PHONY: run all build release test install clean
 
 run: build
-	./build/template
+	./build/axigate -v
 	
 all: test
 
@@ -16,7 +16,7 @@ release:
 	cd build && make
 
 test: build
-	./build/template_test
+	./build/axigate_test
 
 install: release
 	cd build && sudo make install

@@ -1,0 +1,11 @@
+[Unit]
+Description=AX.25 <> APRS-IS bidirectional gateway
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/axigate
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

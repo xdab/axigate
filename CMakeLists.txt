@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(template C)
+project(axigate C)
 set(CMAKE_C_STANDARD 11)
 
 # Set compiler flags based on build type
@@ -23,21 +23,21 @@ include(GNUInstallDirs)
 # add_subdirectory(libs/some_lib)
 
 # Main executable
-add_executable(template src/main.c src/template.c src/options.c src/options_args.c)
-target_include_directories(template PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+add_executable(axigate src/main.c src/axigate.c src/options.c src/options_args.c)
+target_include_directories(axigate PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-install(TARGETS template
+install(TARGETS axigate
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 # Tests
-add_executable(template_test test/main_test.c test/test.c src/template.c)
-target_include_directories(template_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/test ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(template_test m)
+add_executable(axigate_test test/main_test.c test/test.c src/axigate.c)
+target_include_directories(axigate_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/test ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(axigate_test m)
 
 # Strip symbols in Release builds
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_custom_command(TARGET template_test POST_BUILD COMMAND ${CMAKE_STRIP} $<TARGET_FILE:template_test>)
+    add_custom_command(TARGET axigate_test POST_BUILD COMMAND ${CMAKE_STRIP} $<TARGET_FILE:axigate_test>)
 endif()
 
 # Systemd service installation

@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include "template.h"
 #include "options.h"
 
 int main(int argc, char *argv[])
@@ -15,10 +14,6 @@ int main(int argc, char *argv[])
         printf("Number: %d\n", opts.number);
         printf("String: '%s'\n", opts.string);
     }
-
-    int value = opts.number ? opts.number : 5;
-    int result = template_function(value);
-    printf("The square of %d is %d\n", value, result);
 
     return 0;
 }

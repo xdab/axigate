@@ -1,22 +1,23 @@
-# template
+# axigate
 
-[One-line description of what this project does]
-
-This particular project is a template repository.
+AX.25 <> APRS-IS bidirectional gateway for networked TNCs.
 
 ### What it is
 
-[Describe what this project does and its main features. What problem does it solve?]
+A bidirectional gateway that connects KISS TNCs (AX.25) to APRS-IS servers. It enables:
 
-The main feature of the _template_ project is enabling quick scaffolding of other projects. 
+- **RF to Internet**: Forward packets from TNC to APRS-IS
+- **Internet to RF**: Forward packets from APRS-IS to TNC
+- **Callsign filtering**: Only forward packets for specific callsigns/paths
+- **Duplicate suppression**: Prevent loops between RF and internet
 
 ### What it isn't
 
-[Describe what this project is not, and why.]
-
 This project is **not**:
 
-- A real application; It's just a template repository.
+- A TNC — no modulation/demodulation, just a gateway
+- A digipeater — doesn't rebroadcast RF packets on RF
+- Cross-platform — Linux-only (uses Unix sockets, signal handling)
 
 ## Build and installation
 
@@ -25,11 +26,10 @@ This project is **not**:
 - Linux
 - GCC or Clang
 - CMake
-- [Other dependencies]
 
 ```bash
-git clone https://github.com/xdab/template-c.git
-cd template-c
+git clone https://github.com/xdab/axigate.git
+cd axigate
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make
@@ -39,23 +39,34 @@ sudo make install
 ## Usage
 
 ```bash
-# Basic usage
-template [options]
+# TCP TNC connection with APRS-IS
+axigate -h 192.168.0.9 -p 8144 -s aprs.server.com -P 14580 -c MYCALL -p 12345
 
-# Show help
-template --help
+# Unix socket TNC
+axigate -x /run/tnc.sock -s aprs.server.com -P 14580 -c MYCALL -p 12345
 
-# Example use case
-template -x value -y value
+# Configuration file
+axigate -c axigate.conf
+
+# Dry run (no packets transmitted)
+axigate -n -c MYCALL -p 12345
 ```
 
 ## Command Line Arguments
 
-| Short | Long        | Description       |
-| ----- | ----------- | ----------------- |
-| `-h`  | `--help`    | Show help message |
-| `-v`  | `--verbose` | Verbose output    |
-| `-V`  | `--version` | Show version      |
+| Short      | Long                | Description                         |
+| ---------- | ------------------- | ----------------------------------- |
+| `-c FILE`  | `--config=FILE`     | Configuration file                  |
+| `-h ADDR`  | `--tnc-host=ADDR`   | TNC TCP address                     |
+| `-p PORT`  | `--tnc-port=PORT`   | TNC TCP port                        |
+| `-x SOCK`  | `--tnc-socket=SOCK` | TNC Unix socket path                |
+| `-s ADDR`  | `--aprs-host=ADDR`  | APRS-IS server address              |
+| `-P PORT`  | `--aprs-port=PORT`  | APRS-IS server port                 |
+| `-C CALL`  | `--call=CALL`       | Gateway callsign                    |
+| `-p PASS`  | `--passcode=PASS`   | APRS-IS passcode                    |
+| `-f CALL`  | `--filter=CALL`     | Filter callsigns (comma-separated)  |
+| `-v LEVEL` | `--log-level=LEVEL` | Log level: standard, verbose, debug |
+| `-n`       | `--dry-run`         | Don't transmit packets              |
 
 ## Configuration File
 
@@ -66,16 +77,36 @@ The file uses simple `key=value` syntax with `#` comments.
 ### Example
 
 ```ini
-# template.conf
-option1=value1
-option2=value2
+# axigate.conf
+tnc-host=192.168.0.9
+tnc-port=8144
+aprs-host=aprs.server.com
+aprs-port=14580
+call=MYCALL
+passcode=12345
+filter=RELAY,WIDE
+log-level=verbose
+dry-run=false
 ```
 
 ## Dependencies
 
-- [Library X]: [Purpose]
-- [Library Y]: [Purpose]
+- **libtnc**: included as a [git submodule](libs/libtnc/)
+  - AX.25 packet parsing/construction
+  - KISS frame encoding/decoding
+  - TCP/Unix socket utilities
+
+## Installation
+
+There is a helper Make target `make install` which handles everything from compilation to asking for SU rights and installing files to the relevant directories.
+
+Systemd service `axigate.service` will be installed as well.
+Please review the unit file and adjust for your needs.
 
 ## License
 
 GNU General Public License v3.0 - see [LICENSE](LICENSE)
+
+---
+
+**Development notes:** See [.clinerules](.clinerules) for AI-friendly technical documentation.
