@@ -1,0 +1,54 @@
+# .clinerules - Technical Rules for template
+
+[A one-line description of what this project does]
+
+## Architecture
+
+[Describe the high-level architecture and data flow. What are the main components? How do they interact?]
+
+```
+[Optional: ASCII diagram showing main components and data flow]
+```
+
+## Module Breakdown
+
+**Core** (src/)
+
+- `main.c`: [Main entry point, initialization, main loop/cleanup]
+
+**Tests** (test/)
+
+- `test.c/h`: [Test framework]
+- `test_template.c`: [What gets tested?]
+
+## Code Style
+
+- **Minimal comments** — self-explanatory code preferred
+- **Error handling**: 0 = success, negative = error
+- **Buffer safety**: Always verify buffer sizes before writes
+- **Goto for cleanup** only in main()
+- **Prefix conventions**: [e.g., `tmpl_*` for template functions]
+
+## Build
+
+**CMake targets**:
+
+- `template`: Main library/executable
+- `template_test`: Unit tests
+
+**Build types**: Debug (`-pg -O0`), Release (`-O3 -flto -gc-sections`)
+
+**Makefile targets**: `build`, `release`, `test`, `clean`
+
+**Dependencies**: math library (-lm)
+
+## Testing
+
+- `make test` runs the test executable
+- Test functions in `test/` directory with `void test_name(void)` signature
+- Use assertion macros from `test.h`
+
+## Error Handling
+
+- [Describe error code conventions]
+- [Describe how errors propagate]
