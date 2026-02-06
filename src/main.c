@@ -49,7 +49,7 @@ static void aprsis_send_login(void)
     tcp_client_send(aprsis_client, &send_buf);
     aprsis_logged_in = true;
 
-    LOG("t %.*s\n", (int)send_buf.size, send_buf.data);
+    LOG("T %.*s\n", (int)send_buf.size, send_buf.data);
 }
 
 static void aprsis_line_callback(const buffer_t *line_buf)
@@ -162,13 +162,7 @@ int main(int argc, char *argv[])
 
                 packet_log("<", &packet);
                 prepare_for_rxigate(&packet);
-
-                buffer_t tnc2_buf = {
-                    .data = (unsigned char *)buf_data,
-                    .capacity = READ_BUF_SIZE,
-                    .size = 0};
-
-                send_to_aprsis(aprsis_client, &packet, &tnc2_buf, &opts);
+                send_to_aprsis(aprsis_client, &packet, &opts);
             }
         }
 
