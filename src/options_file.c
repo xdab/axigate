@@ -30,6 +30,16 @@ void opts_parse_conf_file(options_t *opts, const char *filename)
         strncpy(opts->call, val, sizeof(opts->call) - 1);
     opts->ssid = conf_get_int_or_default(&conf, OPT_SSID, opts->ssid);
 
+    // APRS-IS connection
+    val = conf_get_str_or_default(&conf, OPT_IS_HOST, opts->is_host);
+    if (opts->is_host[0] == '\0')
+        strncpy(opts->is_host, val, sizeof(opts->is_host) - 1);
+    val = conf_get_str_or_default(&conf, OPT_IS_FILTER, opts->is_filter);
+    if (opts->is_filter[0] == '\0')
+        strncpy(opts->is_filter, val, sizeof(opts->is_filter) - 1);
+    opts->is_port = conf_get_int_or_default(&conf, OPT_IS_PORT, opts->is_port);
+    opts->is_passcode = conf_get_int_or_default(&conf, OPT_IS_PASSCODE, opts->is_passcode);
+
     // Log level
     val = conf_get_str(&conf, OPT_VERBOSE);
     if (val != NULL)

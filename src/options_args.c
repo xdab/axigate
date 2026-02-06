@@ -10,11 +10,16 @@ static struct argp_option options[] = {
     {OPT_PORT, OPT_SHORT_PORT, "PORT", 0, "TNC port (default: 8144)", 1},
     {OPT_SOCKET, OPT_SHORT_SOCKET, "PATH", 0, "Unix socket path", 1},
 
+    {OPT_IS_HOST, OPT_SHORT_IS_HOST, "HOST", 0, "APRS-IS host (default: rotate.aprs2.net)", 1},
+    {OPT_IS_PORT, OPT_SHORT_IS_PORT, "PORT", 0, "APRS-IS port (default: 14580)", 1},
+    {OPT_IS_FILTER, OPT_SHORT_IS_FILTER, "FILTER", 0, "APRS-IS filter string", 1},
+    {OPT_IS_PASSCODE, OPT_SHORT_IS_PASSCODE, "PASSCDE", 0, "APRS-IS passcode (default: -1)", 1},
+
     {OPT_CALL, OPT_SHORT_CALL, "CALL", 0, "Digipeater callsign", 2},
     {OPT_SSID, OPT_SHORT_SSID, "SSID", 0, "Digipeater SSID", 2},
 
     {OPT_VERBOSE, OPT_SHORT_VERBOSE, 0, 0, "Verbose logs", 4},
-    {"debug", OPT_SHORT_DEBUG, 0, 0, "Debug logs (very verbose)", 4},
+    {OPT_DEBUG, OPT_SHORT_DEBUG, 0, 0, "Debug logs (very verbose)", 4},
 
     {OPT_DRY_RUN, OPT_SHORT_DRY_RUN, 0, 0, "Don't actually send packets, just log them", 5},
 
@@ -36,6 +41,18 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
         break;
     case OPT_SHORT_SOCKET:
         strncpy(opts->socket, arg, sizeof(opts->socket) - 1);
+        break;
+    case OPT_SHORT_IS_HOST:
+        strncpy(opts->is_host, arg, sizeof(opts->is_host) - 1);
+        break;
+    case OPT_SHORT_IS_PORT:
+        opts->is_port = atoi(arg);
+        break;
+    case OPT_SHORT_IS_FILTER:
+        strncpy(opts->is_filter, arg, sizeof(opts->is_filter) - 1);
+        break;
+    case OPT_SHORT_IS_PASSCODE:
+        opts->is_passcode = atoi(arg);
         break;
     case OPT_SHORT_CALL:
         strncpy(opts->call, arg, sizeof(opts->call) - 1);

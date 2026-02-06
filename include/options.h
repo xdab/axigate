@@ -9,9 +9,15 @@
 #define OPT_HOST "host"
 #define OPT_PORT "port"
 #define OPT_SOCKET "socket"
+#define OPT_IS_HOST "is-host"
+#define OPT_IS_PORT "is-port"
+#define OPT_IS_FILTER "is-filter"
+#define OPT_IS_PASSCODE "is-passcode"
+#define OPT_DEFAULT_IS_PASSCODE (-1)
 #define OPT_CALL "call"
 #define OPT_SSID "ssid"
 #define OPT_VERBOSE "verbose"
+#define OPT_DEBUG "debug"
 
 #define OPT_VAL_LOG_STANDARD "standard"
 #define OPT_VAL_LOG_VERBOSE "verbose"
@@ -27,9 +33,10 @@
 #define OPT_SHORT_SSID 's'
 #define OPT_SHORT_VERBOSE 'v'
 #define OPT_SHORT_DEBUG 'V'
-
-#define OPT_STR_SIZE 256
-#define OPT_MAX_ALIASES 32
+#define OPT_SHORT_IS_HOST 1001
+#define OPT_SHORT_IS_PORT 1002
+#define OPT_SHORT_IS_FILTER 1003
+#define OPT_SHORT_IS_PASSCODE 1004
 
 typedef struct
 {
@@ -40,10 +47,15 @@ typedef struct
 
 typedef struct options
 {
-    char config_file[OPT_STR_SIZE];
+    char config_file[256];
     char host[64];
     int port;
-    char socket[OPT_STR_SIZE];
+    char socket[256];
+
+    char is_host[64];
+    int is_port;
+    char is_filter[64];
+    int is_passcode;
 
     char call[8];
     int ssid;
