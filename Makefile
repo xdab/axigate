@@ -1,4 +1,4 @@
-.PHONY: run all build release test install clean
+.PHONY: run all build release test install clean update
 
 run: build
 	./build/axigate -c sample.conf
@@ -23,3 +23,7 @@ install: release
 
 clean:
 	rm -rf build
+	
+update:
+	git pull
+	git submodule update --init --recursive

@@ -4,19 +4,7 @@ AX.25 <> APRS-IS bidirectional gateway for networked TNCs. Connects to KISS TNCs
 
 ## Architecture
 
-**Single-threaded event loop** with blocking I/O via `select()`:
-
-```
-main() → opts_parse_args/conf/defaults → connection_init → event_loop
-                                                            ↓
-                                    TNC → packet_decode → deduplicate
-                                                            ↓
-                                    aprsis_encode → APRS-IS connection
-                                                            ↓
-                                    APRS-IS → packet_decode → deduplicate
-                                                            ↓
-                                    kiss_encode → TNC connection
-```
+**Single-threaded event loop** with blocking I/O via `select()`.
 
 ## Module Breakdown
 
@@ -25,18 +13,12 @@ main() → opts_parse_args/conf/defaults → connection_init → event_loop
 - `main.c`: Initialize options, connections, main event loop with signal handling
 - `options.c/h`, `options_args.c`, `options_file.c`: Unified options_t struct with CLI/config parsing
 - `connection.c/h`: TCP client and Unix domain socket abstraction (libtnc wrappers)
-- `packet.c/h`: KISS/APRS-IS decode/encode glue, packet logging
-- `gateway.c/h`: Gateway logic (bidirectional forwarding, filtering)
-- `deduplicator.c/h`: CRC-based frame deduplication with expiration window
+- `packet.c/h`: KISS decode/encode glue, packet logging
+- `rxigate.c/h`: RX-iGate logic (APRS-IS forwarding, path annotation with qAR)
 
-**libtnc** (libs/libtnc/ submodule)
+**libtnc** (libs/libtnc/): AX.25 packet parsing/construction, KISS encoding/decoding
 
-- AX.25 packet parsing/construction (`ax25.h`, `ax25.c`)
-- KISS frame encoding/decoding (`kiss.h`, `kiss.c`)
-- TCP client (`tcp.h`, `tcp.c`)
-- Unix domain socket (`uds.h`, `uds.c`)
-- Buffer utilities (`buffer.h`, `buffer.c`)
-- Logging (`common.h`, `common.c`)
+**libcomm** (libs/libcomm/): TCP/Unix socket clients, socket polling, line buffering
 
 ## Code Style
 
@@ -44,27 +26,20 @@ main() → opts_parse_args/conf/defaults → connection_init → event_loop
 - **Error handling**: 0 = success, negative = error (via libtnc conventions)
 - **Buffer safety**: Always pass buffer_t with size/capacity fields
 - **Goto for cleanup** only in main()
-- **Prefix conventions**: `opts_*`, `connection_*`, `packet_*`, `gateway_*`, `deduplicator_*`
+- **Prefix conventions**: `opts_*`, `connection_*`, `packet_*`, `rxigate_*`
 
-## Deduplication Strategy
+## RX-iGate Logic
 
-Two deduplicators in main event loop:
+**RF to Internet forwarding**:
 
-1. **tnc_dedup**: Prevents processing duplicate packets from TNC
-2. **aprsis_dedup**: Prevents forwarding duplicate packets back to sources
+1. Packets from TNC → KISS decode → AX.25 unpack → annotate with qAR → send to APRS-IS
 
-Uses CRC-based duplicate detection with time-based expiration window.
+**TX-iGating (APRS-IS to RF)**:
+- TODO: Not yet implemented
 
-## Gateway Logic
-
-**Bidirectional forwarding**:
-
-1. Packets from TNC → decode → deduplicate → encode for APRS-IS → send to APRS-IS
-2. Packets from APRS-IS → decode → deduplicate → encode for TNC → send to TNC
-
-**Filtering**:
-- Optional callsign/path filtering
-- Prevent loops by tracking recently seen packets
+**Path annotation**:
+- Adds `qAR` and gateway callsign to packet path before APRS-IS upload
+- Marks previous last path entry as non-final
 
 ## Logging
 
@@ -88,7 +63,7 @@ Messages: lowercase start, no period/newline (auto-added).
 
 **Makefile targets**: `build`, `release`, `test`, `clean`
 
-**Dependencies**: libtnc (submodule), math library (-lm)
+**Dependencies**: libtnc (submodule), libcomm (submodule), math library (-lm)
 
 ## Configuration
 
@@ -111,4 +86,4 @@ Config file uses `key=value` syntax with `#` comments. Same keys as CLI long opt
 
 - `make test` runs axigate_test executable
 - Test files in `test/` directory with `test_*.h` functions
-- Tests: packet encode/decode, deduplication, gateway logic
+- Tests: packet encode/decode, rxigate logic (path annotation)
