@@ -34,7 +34,7 @@ target_link_libraries(axigate PRIVATE tnc comm m)
 target_include_directories(axigate PRIVATE libs/libtnc/include libs/libcomm/include)
 
 # axigate_test: unit tests
-add_executable(axigate_test test/main_test.c test/test.c src/rxigate.c)
+add_executable(axigate_test test/main_test.c test/test.c src/rxigate.c src/txigate.c src/packet.c src/connection.c)
 target_link_libraries(axigate_test PRIVATE tnc comm m)
 target_include_directories(axigate_test PRIVATE libs/libtnc/include libs/libcomm/include)
 

@@ -1,10 +1,7 @@
 #pragma once
 #include <ax25.h>
 #include <tcp.h>
-#include "options.h"
 
-extern ax25_addr_t g_rxigate_addr;
+int prepare_for_rx_igate(ax25_packet_t *packet);
 
-void prepare_for_rxigate(ax25_packet_t *packet);
-
-int send_to_aprsis(tcp_client_t *aprsis, ax25_packet_t *packet, options_t *opts);
+int send_to_is(tcp_client_t *aprsis, ax25_packet_t *packet);

@@ -12,17 +12,19 @@
 #include "packet.h"
 #include "options.h"
 #include "rxigate.h"
+#include "txigate.h"
 
 #define READ_BUF_SIZE 2048
 
-#define APRSIS_SOFTWARE "axigate"
-#define APRSIS_VERSION "1.0"
+#define SOFTWARE "axigate"
+#define VERSION "1.0"
 
 static volatile sig_atomic_t g_shutdown_requested = 0;
-static bool aprsis_logged_in = false;
-static tcp_client_t *aprsis_client = NULL;
-static options_t *aprsis_opts = NULL;
-ax25_addr_t g_rxigate_addr;
+static connection_t *g_tnc = NULL;
+static tcp_client_t *g_aprsis = NULL;
+static bool g_aprsis_logged_in = false;
+ax25_addr_t g_igate_call;
+options_t g_opts;
 
 static void signal_handler(int sig)
 {
@@ -36,20 +38,29 @@ static void aprsis_send_login(void)
 
     int len = snprintf(
         login_buf, sizeof(login_buf),
-        "user %s pass %d vers " APRSIS_SOFTWARE " " APRSIS_VERSION,
-        aprsis_opts->call, aprsis_opts->is_passcode);
-    if (aprsis_opts->is_filter[0] != '\0')
-        len += snprintf(login_buf + len, sizeof(login_buf) - len, " filter %s", aprsis_opts->is_filter);
+        "user %s pass %d vers " SOFTWARE " " VERSION,
+        g_opts.call,
+        g_opts.is_passcode);
+
+    bool has_filter = g_opts.is_filter[0] != '\0';
+    if (has_filter)
+    {
+        len += snprintf(
+            login_buf + len, sizeof(login_buf) - len,
+            " filter %s",
+            g_opts.is_filter);
+    }
+
     len += snprintf(login_buf + len, sizeof(login_buf) - len, "\r\n");
 
     buffer_t send_buf = {
         .data = (unsigned char *)login_buf,
         .size = len,
         .capacity = (int)sizeof(login_buf)};
-    tcp_client_send(aprsis_client, &send_buf);
-    aprsis_logged_in = true;
+    tcp_client_send(g_aprsis, &send_buf);
+    g_aprsis_logged_in = true;
 
-    LOG("T %.*s\n", (int)send_buf.size, send_buf.data);
+    LOG("T %.*s", (int)send_buf.size - 2, send_buf.data);
 }
 
 static void aprsis_line_callback(const buffer_t *line_buf)
@@ -59,30 +70,61 @@ static void aprsis_line_callback(const buffer_t *line_buf)
 
     if (line_buf->data[0] == '#')
     {
-        LOG("%.*s\n", (int)line_buf->size, line_buf->data);
+        LOG("%.*s", (int)line_buf->size, line_buf->data);
 
-        if (!aprsis_logged_in)
+        if (!g_aprsis_logged_in)
             aprsis_send_login();
 
         return;
     }
 
-    LOG("r %.*s\n", (int)line_buf->size, line_buf->data);
+    LOG("r %.*s", (int)line_buf->size, line_buf->data);
 
-    // TODO TX-iGating from APRS-IS to TNC
+    ax25_packet_t packet;
+    if (tnc2_string_to_packet(&packet, line_buf) != 0)
+    {
+        LOGV("invalid packet from APRS-IS");
+        return;
+    }
+
+    if (prepare_for_tx_igate(&packet) < 0)
+    {
+        LOGV("failed to prepare TX packet");
+        return;
+    }
+
+    send_to_tnc(g_tnc, &packet);
+}
+
+static void tnc_packet_callback(ax25_packet_t *packet)
+{
+    packet_log("<", packet);
+
+    if (prepare_for_rx_igate(packet) < 0)
+    {
+        LOGV("failed to prepare RX packet");
+        return;
+    }
+
+    if (prepare_for_rx_igate(packet) < 0)
+    {
+        LOGV("failed to prepare RX packet");
+        return;
+    }
+
+    send_to_is(g_aprsis, packet);
 }
 
 int main(int argc, char *argv[])
 {
-    options_t opts = {0};
-    opts_init(&opts);
-    opts_parse_args(&opts, argc, argv);
-    opts_parse_conf_file(&opts, opts.config_file);
-    opts_defaults(&opts);
+    opts_init(&g_opts);
+    opts_parse_args(&g_opts, argc, argv);
+    opts_parse_conf_file(&g_opts, g_opts.config_file);
+    opts_defaults(&g_opts);
 
-    ax25_addr_init_with(&g_rxigate_addr, opts.call, opts.ssid, false);
+    ax25_addr_init_with(&g_igate_call, g_opts.call, g_opts.ssid, false);
 
-    _log_level = opts.log_level;
+    _log_level = g_opts.log_level;
 
     connection_t conn;
     tcp_client_t aprsis;
@@ -106,27 +148,27 @@ int main(int argc, char *argv[])
 
     kiss_decoder_init(&decoder);
 
-    if (opts.socket[0] != '\0')
-        LOG("connecting to TNC via Unix socket at %s...", opts.socket);
+    if (g_opts.socket[0] != '\0')
+        LOG("connecting to TNC via Unix socket at %s...", g_opts.socket);
     else
-        LOG("connecting to TNC via TCP at %s:%d...", opts.host, opts.port);
+        LOG("connecting to TNC via TCP at %s:%d...", g_opts.host, g_opts.port);
 
-    if (connection_init(&conn, opts.host, opts.port, opts.socket) < 0)
+    if (connection_init(&conn, g_opts.host, g_opts.port, g_opts.socket) < 0)
     {
         LOG("failed to connect to TNC");
         goto SHUTDOWN;
     }
 
-    LOG("connecting to APRS-IS at %s:%d...", opts.is_host, opts.is_port);
+    LOG("connecting to APRS-IS at %s:%d...", g_opts.is_host, g_opts.is_port);
 
-    if (tcp_client_init(&aprsis, opts.is_host, opts.is_port, TCP_DEF_TIMEOUT_MS) < 0)
+    if (tcp_client_init(&aprsis, g_opts.is_host, g_opts.is_port, TCP_DEF_TIMEOUT_MS) < 0)
     {
         LOG("failed to connect to APRS-IS");
         goto SHUTDOWN_TNC;
     }
 
-    aprsis_client = &aprsis;
-    aprsis_opts = &opts;
+    g_aprsis = &aprsis;
+    g_tnc = &conn;
 
     int tnc_fd = (conn.type == CONNECTION_TCP) ? conn.client.tcp.fd : conn.client.uds.fd;
     socket_poller_add(&poller, tnc_fd, POLLER_EV_IN);
@@ -156,14 +198,8 @@ int main(int argc, char *argv[])
             }
 
             for (int i = 0; i < len; i++)
-            {
-                if (!packet_decode(&decoder, buf_data[i], &packet))
-                    continue;
-
-                packet_log("<", &packet);
-                prepare_for_rxigate(&packet);
-                send_to_aprsis(aprsis_client, &packet, &opts);
-            }
+                if (packet_decode(&decoder, buf_data[i], &packet))
+                    tnc_packet_callback(&packet);
         }
 
         if (socket_poller_is_ready(&poller, aprsis.fd))
