@@ -1,14 +1,33 @@
 # axigate
 
-AX.25 RX-iGate for networked TNCs. Forwards packets from KISS TNCs to APRS-IS.
+AX.25 ↔ APRS-IS bidirectional gateway for networked TNCs. Forwards packets bidirectionally between KISS TNCs and APRS-IS servers.
 
 ### What it is
 
-An RX-iGate that connects KISS TNCs (AX.25) to APRS-IS servers:
+A bidirectional gateway that connects KISS TNCs (AX.25) to APRS-IS servers:
 
-- **RF to Internet**: Decode packets from TNC and forward to APRS-IS
-- **Path annotation**: Adds `qAR` and gateway callsign to packet path
-- **Dry run mode**: Test configuration without transmitting packets
+- **RF to Internet (RX-iGate)**: Decode packets from TNC and forward to APRS-IS with path annotation
+- **Internet to RF (TX-iGate)**: Receive packets from APRS-IS and transmit to RF via TNC (encapsulated format)
+- **Path annotation**: Adds `qAR` and gateway callsign to packet path for RF→IS packets
+- **Directional control**: Enable or disable each direction independently
+
+### Quick Start
+
+```bash
+# Enable RF to APRS-IS forwarding only (RX-iGate mode)
+axigate -h 192.168.0.9 -p 8144 -s aprs.server.com -P 14580 -c MYCALL -r
+
+# Enable both directions (bidirectional gateway)
+axigate -h 192.168.0.9 -p 8144 -s aprs.server.com -P 14580 -c MYCALL -r -i
+
+# Unix socket TNC
+axigate -x /run/tnc.sock -s aprs.server.com -P 14580 -c MYCALL -r
+
+# Configuration file
+axigate -c axigate.conf
+```
+
+**Important**: By default, no forwarding is enabled. You must use `-r` (RF→IS) and/or `-i` (IS→RF) flags to enable packet forwarding.
 
 ## Build and installation
 
@@ -27,39 +46,23 @@ make
 sudo make install
 ```
 
-## Usage
-
-```bash
-# TCP TNC connection with APRS-IS
-axigate -h 192.168.0.9 -p 8144 -s aprs.server.com -P 14580 -c MYCALL -p 12345
-
-# Unix socket TNC
-axigate -x /run/tnc.sock -s aprs.server.com -P 14580 -c MYCALL -p 12345
-
-# Configuration file
-axigate -c axigate.conf
-
-# Dry run (no packets transmitted)
-axigate -n -c MYCALL -p 12345
-```
-
 ## Command Line Arguments
 
-| Short       | Long                 | Description                          |
-| ----------- | -------------------- | ------------------------------------ |
-| `-c FILE`   | `--config=FILE`      | Configuration file                   |
-| `-h ADDR`   | `--tnc-host=ADDR`    | TNC TCP address                      |
-| `-p PORT`   | `--tnc-port=PORT`    | TNC TCP port (default: 8144)         |
-| `-x SOCK`   | `--tnc-socket=SOCK`  | TNC Unix socket path                 |
-| `-s ADDR`   | `--ssid=SSID`        | Gateway SSID (default: 0)            |
-| `-S ADDR`   | `--aprs-host=ADDR`   | APRS-IS server address               |
-| `-P PORT`   | `--aprs-port=PORT`   | APRS-IS server port (default: 14580) |
-| `-C CALL`   | `--call=CALL`        | Gateway callsign                     |
-| `-f FILTER` | `--is-filter=FILTER` | APRS-IS filter string                |
-| `-p PASS`   | `--is-passcode=PASS` | APRS-IS passcode                     |
-| `-v`        |                      | Verbose logging                      |
-| `-V`        |                      | Debug logging                        |
-| `-n`        | `--dry-run`          | Don't transmit packets               |
+| Short       | Long                 | Description                              |
+| ----------- | -------------------- | ---------------------------------------- |
+| `-c FILE`   | `--config=FILE`      | Configuration file                       |
+| `-h ADDR`   | `--host=ADDR`        | TNC TCP address                          |
+| `-p PORT`   | `--port=PORT`        | TNC TCP port (default: 8144)             |
+| `-x SOCK`   | `--socket=SOCK`      | TNC Unix socket path                     |
+| `-s SSID`   | `--ssid=SSID`        | Gateway SSID (default: 0)                |
+| `-S ADDR`   | `--is-host=ADDR`     | APRS-IS server address (default: rotate.aprs2.net) |
+| `-P PORT`   | `--is-port=PORT`     | APRS-IS server port (default: 14580)     |
+| `-f FILTER` | `--is-filter=FILTER` | APRS-IS filter string                    |
+| `-C CALL`   | `--call=CALL`        | Gateway callsign                         |
+| `-r`        | `--rf-to-is`         | Enable RF to APRS-IS forwarding          |
+| `-i`        | `--is-to-rf`         | Enable APRS-IS to RF forwarding          |
+| `-v`        |                      | Verbose logging                          |
+| `-V`        |                      | Debug logging                            |
 
 ## Configuration File
 
@@ -71,17 +74,46 @@ The file uses simple `key=value` syntax with `#` comments.
 
 ```ini
 # axigate.conf
-tnc-host=192.168.0.9
-tnc-port=8144
+# TNC connection (TCP or Unix socket)
+host=192.168.0.9
+port=8144
+# socket=/tmp/tnc.sock
+
+# Gateway identity (for APRS-IS path annotation)
+call=MYCALL
+ssid=0
+
+# APRS-IS connection
 is-host=aprs.server.com
 is-port=14580
 is-filter=m/20
 is-passcode=12345
-call=MYCALL
-ssid=0
+
+# Enable forwarding directions
+rf-to-is=true
+is-to-rf=false
+
+# Logging: standard, verbose, debug
 log-level=verbose
-dry-run=false
 ```
+
+## How It Works
+
+### RF to Internet (RX-iGate)
+
+1. Receive KISS frames from TNC
+2. Decode AX.25 packet
+3. Validate packet (check for RFONLY/NOGATE, ignore encapsulated packets)
+4. Add `qAR` and gateway callsign to path
+5. Convert to TNC2 format and send to APRS-IS
+
+### Internet to RF (TX-iGate)
+
+1. Receive packet from APRS-IS (TNC2 format)
+2. Parse AX.25 packet
+3. Replace path with TCPIP marker and gateway callsign
+4. Encapsulate original packet in `}` format
+5. Send to TNC as KISS frame
 
 ## Dependencies
 
@@ -89,6 +121,9 @@ dry-run=false
   - AX.25 packet parsing/construction
   - KISS frame encoding/decoding
   - TCP/Unix socket utilities
+- **libcomm**: included as a [git submodule](libs/libcomm/)
+  - TCP/Unix socket clients
+  - Socket polling
 
 ## Installation
 

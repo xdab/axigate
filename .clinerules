@@ -15,6 +15,7 @@ AX.25 <> APRS-IS bidirectional gateway for networked TNCs. Connects to KISS TNCs
 - `connection.c/h`: TCP client and Unix domain socket abstraction (libtnc wrappers)
 - `packet.c/h`: KISS decode/encode glue, packet logging
 - `rxigate.c/h`: RX-iGate logic (APRS-IS forwarding, path annotation with qAR)
+- `txigate.c/h`: TX-iGate logic (APRS-IS to RF forwarding, packet encapsulation)
 
 **libtnc** (libs/libtnc/): AX.25 packet parsing/construction, KISS encoding/decoding
 
@@ -26,7 +27,7 @@ AX.25 <> APRS-IS bidirectional gateway for networked TNCs. Connects to KISS TNCs
 - **Error handling**: 0 = success, negative = error (via libtnc conventions)
 - **Buffer safety**: Always pass buffer_t with size/capacity fields
 - **Goto for cleanup** only in main()
-- **Prefix conventions**: `opts_*`, `connection_*`, `packet_*`, `rxigate_*`
+- **Prefix conventions**: `opts_*`, `connection_*`, `packet_*`, `rxigate_*`, `txigate_*`
 
 ## RX-iGate Logic
 
@@ -35,9 +36,14 @@ AX.25 <> APRS-IS bidirectional gateway for networked TNCs. Connects to KISS TNCs
 1. Packets from TNC → KISS decode → AX.25 unpack → annotate with qAR → send to APRS-IS
 
 **TX-iGating (APRS-IS to RF)**:
-- TODO: Not yet implemented
+
+- Receives packets from APRS-IS in TNC2 format
+- Replaces path with TCPIP marker and gateway callsign
+- Encapsulates original packet in `}` format
+- Sends to TNC as KISS frame
 
 **Path annotation**:
+
 - Adds `qAR` and gateway callsign to packet path before APRS-IS upload
 - Marks previous last path entry as non-final
 
