@@ -75,10 +75,10 @@ int send_to_tnc(connection_t *conn, ax25_packet_t *packet)
         return -1;
     }
 
-    char tx_indicator = g_opts.dry_run ? 'D' : '>';
+    char tx_indicator = g_opts.is_to_rf ? '>' : 'D';
     LOG("%c %.*s", tx_indicator, (int)(tnc2_buf.size), tnc2_buf_data);
 
-    if (g_opts.dry_run)
+    if (!g_opts.is_to_rf)
         return 0;
 
     return connection_send(conn, &kiss_out);

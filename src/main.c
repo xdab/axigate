@@ -8,6 +8,7 @@
 #include <poller.h>
 #include <line.h>
 #include <tnc2.h>
+#include "aprsis.h"
 #include "connection.h"
 #include "packet.h"
 #include "options.h"
@@ -15,9 +16,6 @@
 #include "txigate.h"
 
 #define READ_BUF_SIZE 2048
-
-#define SOFTWARE "axigate"
-#define VERSION "1.0"
 
 static volatile sig_atomic_t g_shutdown_requested = 0;
 static connection_t *g_tnc = NULL;
@@ -34,33 +32,20 @@ static void signal_handler(int sig)
 
 static void aprsis_send_login(void)
 {
-    char login_buf[256];
+    if (g_aprsis_logged_in)
+        return;
 
-    int len = snprintf(
-        login_buf, sizeof(login_buf),
-        "user %s pass %d vers " SOFTWARE " " VERSION,
-        g_opts.call,
-        g_opts.is_passcode);
+    char login_str[256];
+    buffer_t login_buf = {
+        .data = login_str,
+        .capacity = sizeof(login_str),
+        .size = 0};
 
-    bool has_filter = g_opts.is_filter[0] != '\0';
-    if (has_filter)
-    {
-        len += snprintf(
-            login_buf + len, sizeof(login_buf) - len,
-            " filter %s",
-            g_opts.is_filter);
-    }
-
-    len += snprintf(login_buf + len, sizeof(login_buf) - len, "\r\n");
-
-    buffer_t send_buf = {
-        .data = (unsigned char *)login_buf,
-        .size = len,
-        .capacity = (int)sizeof(login_buf)};
-    tcp_client_send(g_aprsis, &send_buf);
+    aprsis_build_login(g_opts.call, g_opts.is_passcode, g_opts.is_filter, &login_buf);
+    tcp_client_send(g_aprsis, &login_buf);
     g_aprsis_logged_in = true;
 
-    LOG("T %.*s", (int)send_buf.size - 2, send_buf.data);
+    LOG("T %.*s", login_buf.size - 2, login_buf.data);
 }
 
 static void aprsis_line_callback(const buffer_t *line_buf)
@@ -70,15 +55,9 @@ static void aprsis_line_callback(const buffer_t *line_buf)
 
     if (line_buf->data[0] == '#')
     {
-        LOG("%.*s", (int)line_buf->size, line_buf->data);
-
-        if (!g_aprsis_logged_in)
-            aprsis_send_login();
-
+        aprsis_send_login();
         return;
     }
-
-    LOG("r %.*s", (int)line_buf->size, line_buf->data);
 
     ax25_packet_t packet;
     if (tnc2_string_to_packet(&packet, line_buf) != 0)
@@ -99,12 +78,6 @@ static void aprsis_line_callback(const buffer_t *line_buf)
 static void tnc_packet_callback(ax25_packet_t *packet)
 {
     packet_log("<", packet);
-
-    if (prepare_for_rx_igate(packet) < 0)
-    {
-        LOGV("failed to prepare RX packet");
-        return;
-    }
 
     if (prepare_for_rx_igate(packet) < 0)
     {

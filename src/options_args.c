@@ -21,7 +21,8 @@ static struct argp_option options[] = {
     {OPT_VERBOSE, OPT_SHORT_VERBOSE, 0, 0, "Verbose logs", 4},
     {OPT_DEBUG, OPT_SHORT_DEBUG, 0, 0, "Debug logs (very verbose)", 4},
 
-    {OPT_DRY_RUN, OPT_SHORT_DRY_RUN, 0, 0, "Don't actually send packets, just log them", 5},
+    {OPT_RF_TO_IS, OPT_SHORT_RF_TO_IS, 0, 0, "Enable RF to APRS-IS forwarding", 5},
+    {OPT_IS_TO_RF, OPT_SHORT_IS_TO_RF, 0, 0, "Enable APRS-IS to RF forwarding", 5},
 
     {0, 0, 0, 0, 0, 0}};
 
@@ -66,8 +67,11 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
     case OPT_SHORT_DEBUG:
         opts->log_level = LOG_LEVEL_DEBUG;
         break;
-    case OPT_SHORT_DRY_RUN:
-        opts->dry_run = true;
+    case OPT_SHORT_RF_TO_IS:
+        opts->rf_to_is = true;
+        break;
+    case OPT_SHORT_IS_TO_RF:
+        opts->is_to_rf = true;
         break;
     case ARGP_KEY_NO_ARGS:
         break;

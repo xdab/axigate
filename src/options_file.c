@@ -50,6 +50,7 @@ void opts_parse_conf_file(options_t *opts, const char *filename)
             opts->log_level = LOG_LEVEL_DEBUG;
     }
 
-    // Dry run
-    opts->dry_run = conf_get_bool_or_default(&conf, OPT_DRY_RUN, opts->dry_run);
+    // Directional forwarding
+    opts->rf_to_is = conf_get_bool_or_default(&conf, OPT_RF_TO_IS, opts->rf_to_is);
+    opts->is_to_rf = conf_get_bool_or_default(&conf, OPT_IS_TO_RF, opts->is_to_rf);
 }

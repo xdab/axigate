@@ -23,8 +23,10 @@
 #define OPT_VAL_LOG_VERBOSE "verbose"
 #define OPT_VAL_LOG_DEBUG "debug"
 
-#define OPT_DRY_RUN "dry-run"
-#define OPT_SHORT_DRY_RUN 'n'
+#define OPT_RF_TO_IS "rf-to-is"
+#define OPT_SHORT_RF_TO_IS 'r'
+#define OPT_IS_TO_RF "is-to-rf"
+#define OPT_SHORT_IS_TO_RF 'i'
 
 #define OPT_SHORT_HOST 'h'
 #define OPT_SHORT_PORT 'p'
@@ -61,7 +63,8 @@ typedef struct options
     int ssid;
 
     log_level_e log_level;
-    bool dry_run;
+    bool rf_to_is;
+    bool is_to_rf;
 } options_t;
 
 // Clears out options_t setting null/zero values

@@ -18,7 +18,8 @@ void opts_init(options_t *opts)
     opts->ssid = 0;
 
     opts->log_level = LOG_LEVEL_STANDARD;
-    opts->dry_run = false;
+    opts->rf_to_is = false;
+    opts->is_to_rf = false;
 }
 
 void opts_defaults(options_t *opts)
