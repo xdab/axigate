@@ -140,6 +140,8 @@ int main(int argc, char *argv[])
         goto SHUTDOWN_TNC;
     }
 
+    (void)tcp_client_set_nodelay(&aprsis, true);
+
     g_aprsis = &aprsis;
     g_tnc = &conn;
 
