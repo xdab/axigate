@@ -13,6 +13,8 @@ void opts_init(options_t *opts)
     opts->is_host[0] = '\0';
     opts->is_port = 0;
     opts->is_filter[0] = '\0';
+    opts->udp_kiss_port = 0;
+    opts->udp_tnc2_port = 0;
 
     opts->call[0] = '\0';
     opts->ssid = 0;

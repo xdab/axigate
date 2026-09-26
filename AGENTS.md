@@ -5,7 +5,7 @@ axigate is an AX.25 ↔ APRS-IS bidirectional gateway for networked KISS TNCs. S
 ## Project layout
 
 - `src/`, `include/` — application code; sources in `src/`, all headers in `include/`
-  - `main.c` — entry point: options lifecycle, connections, single-threaded event loop, signal handling
+  - `main.c` — entry point: options lifecycle, connections, optional UDP injection listeners, single-threaded event loop, signal handling
   - `options.c/h`, `options_args.c`, `options_file.c` — `options_t` lifecycle: init → CLI parse (argp) → config file parse → defaults
   - `connection.c/h` — TCP / Unix-socket TNC connection abstraction wrapping libcomm clients
   - `packet.c/h` — KISS decode/encode glue, TNC2 packet logging
@@ -40,6 +40,7 @@ Single-threaded event loop in `main.c` with two process-wide globals shared by a
 - `socket_poller_wait()` (epoll, 1 s timeout) wakes on TNC or APRS-IS traffic.
 - TNC bytes → `packet_decode()` (KISS → AX.25) → `prepare_for_rx_igate()` → `send_to_is()`.
 - APRS-IS lines → `line_reader` → TNC2 parse → `prepare_for_tx_igate()` → `send_to_tnc()`.
+- UDP datagrams (optional; KISS or TNC2 per listen port) → same rxigate path as TNC traffic, logged with marker `U`; gated only when `rf-to-is` is on.
 
 Options precedence is mixed, by design of `options_file.c`: string keys from the config file only fill empty values (CLI wins); numeric/boolean keys present in the file override the CLI. Defaults fill the rest: TNC port 8144, APRS-IS port 14580, passcode -1, `rotate.aprs2.net`.
 
@@ -57,7 +58,7 @@ Options precedence is mixed, by design of `options_file.c`: string keys from the
 - Allman braces, 4-space indent
 - Buffers always passed as `buffer_t` (`data`/`capacity`/`size`); no heap allocation in the hot path
 - `goto` for cleanup only in `main()`
-- Logging via libtnc `common.h` macros to stderr: `LOG` (always), `LOGV` (verbose), `LOGD` (debug), `EXIT`/`EXITIF` (fatal). Messages start lowercase, no trailing period or newline (auto-added). Output prefixes: `i |`, `v |`, `d |`; traffic markers: `R` (RF→IS), `T` (IS login), `<` (from RF), `>` (gated to RF), `D` (dropped)
+- Logging via libtnc `common.h` macros to stderr: `LOG` (always), `LOGV` (verbose), `LOGD` (debug), `EXIT`/`EXITIF` (fatal). Messages start lowercase, no trailing period or newline (auto-added). Output prefixes: `i |`, `v |`, `d |`; traffic markers: `R` (RF→IS), `T` (IS login), `<` (from RF), `U` (UDP inject), `>` (gated to RF), `D` (dropped)
 
 ## Quality gates
 

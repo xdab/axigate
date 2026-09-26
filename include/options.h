@@ -14,6 +14,8 @@
 #define OPT_IS_FILTER "is-filter"
 #define OPT_IS_PASSCODE "is-passcode"
 #define OPT_DEFAULT_IS_PASSCODE (-1)
+#define OPT_UDP_KISS_LISTEN "udp-kiss-listen"
+#define OPT_UDP_TNC2_LISTEN "udp-tnc2-listen"
 #define OPT_CALL "call"
 #define OPT_SSID "ssid"
 #define OPT_VERBOSE "verbose"
@@ -39,6 +41,8 @@
 #define OPT_SHORT_IS_PORT 1002
 #define OPT_SHORT_IS_FILTER 1003
 #define OPT_SHORT_IS_PASSCODE 1004
+#define OPT_SHORT_UDP_KISS_LISTEN 1005
+#define OPT_SHORT_UDP_TNC2_LISTEN 1006
 
 typedef struct
 {
@@ -58,6 +62,9 @@ typedef struct options
     int is_port;
     char is_filter[64];
     int is_passcode;
+
+    int udp_kiss_port;
+    int udp_tnc2_port;
 
     char call[8];
     int ssid;

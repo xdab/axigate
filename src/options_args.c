@@ -15,6 +15,9 @@ static struct argp_option options[] = {
     {OPT_IS_FILTER, OPT_SHORT_IS_FILTER, "FILTER", 0, "APRS-IS filter string", 1},
     {OPT_IS_PASSCODE, OPT_SHORT_IS_PASSCODE, "PASSCDE", 0, "APRS-IS passcode (default: -1)", 1},
 
+    {OPT_UDP_KISS_LISTEN, OPT_SHORT_UDP_KISS_LISTEN, "PORT", 0, "UDP port listening for KISS packets to gate to APRS-IS", 1},
+    {OPT_UDP_TNC2_LISTEN, OPT_SHORT_UDP_TNC2_LISTEN, "PORT", 0, "UDP port listening for TNC2 packets to gate to APRS-IS", 1},
+
     {OPT_CALL, OPT_SHORT_CALL, "CALL", 0, "Digipeater callsign", 2},
     {OPT_SSID, OPT_SHORT_SSID, "SSID", 0, "Digipeater SSID", 2},
 
@@ -54,6 +57,12 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
         break;
     case OPT_SHORT_IS_PASSCODE:
         opts->is_passcode = atoi(arg);
+        break;
+    case OPT_SHORT_UDP_KISS_LISTEN:
+        opts->udp_kiss_port = atoi(arg);
+        break;
+    case OPT_SHORT_UDP_TNC2_LISTEN:
+        opts->udp_tnc2_port = atoi(arg);
         break;
     case OPT_SHORT_CALL:
         strncpy(opts->call, arg, sizeof(opts->call) - 1);

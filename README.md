@@ -58,6 +58,8 @@ axigate --config axigate.conf
 | `--is-port=PORT` | APRS-IS port (default: 14580) |
 | `--is-filter=FILTER` | APRS-IS filter string |
 | `--is-passcode=N` | APRS-IS passcode (default: -1) |
+| `--udp-kiss-listen=PORT` | UDP port listening for KISS packets to gate to APRS-IS (default: off) |
+| `--udp-tnc2-listen=PORT` | UDP port listening for TNC2 packets to gate to APRS-IS (default: off) |
 | `-C, --call=CALL` | Gateway callsign |
 | `-s, --ssid=N` | Gateway SSID (default: 0) |
 | `-r, --rf-to-is` | Enable RF to APRS-IS forwarding |
@@ -85,6 +87,10 @@ is-port=14580
 is-filter=m/20
 is-passcode=-1
 
+# UDP injection inputs (0 = off); requires rf-to-is=true
+# udp-kiss-listen=0
+# udp-tnc2-listen=0
+
 # Forwarding directions
 rf-to-is=true
 is-to-rf=false
@@ -108,6 +114,19 @@ APRS-IS to RF:
 2. Replace the path with the `TCPIP` marker and the gateway callsign
 3. Encapsulate the original packet as a `}` third-party packet
 4. Encode as KISS and send to the TNC
+
+UDP injection:
+
+Local tools (e.g. a cron job beaconing the igate status) can push packets to
+APRS-IS without a TNC. With `--udp-tnc2-listen=PORT` or `--udp-kiss-listen=PORT`,
+axigate listens for datagrams in TNC2 or KISS format and gates them like RF
+traffic (same validation, `qAR` annotation, loop prevention; requires
+`rf-to-is`). Each datagram should hold one KISS frame or one newline-terminated
+TNC2 line, e.g.:
+
+```bash
+echo 'MYCALL>APRS:>igate up' | nc -u -w1 127.0.0.1 28145
+```
 
 ## License
 

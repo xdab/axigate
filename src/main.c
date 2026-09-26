@@ -5,6 +5,7 @@
 #include <common.h>
 #include <buffer.h>
 #include <tcp.h>
+#include <udp.h>
 #include <poller.h>
 #include <line.h>
 #include <tnc2.h>
@@ -88,6 +89,34 @@ static void tnc_packet_callback(ax25_packet_t *packet)
     send_to_is(g_aprsis, packet);
 }
 
+static void udp_packet_callback(ax25_packet_t *packet)
+{
+    packet_log("U", packet);
+
+    if (prepare_for_rx_igate(packet) < 0)
+    {
+        LOGV("failed to prepare injected packet");
+        return;
+    }
+
+    send_to_is(g_aprsis, packet);
+}
+
+static void udp_line_callback(const buffer_t *line_buf)
+{
+    if (line_buf->size == 0)
+        return;
+
+    ax25_packet_t packet;
+    if (tnc2_string_to_packet(&packet, line_buf) != 0)
+    {
+        LOGV("invalid packet injected via UDP");
+        return;
+    }
+
+    udp_packet_callback(&packet);
+}
+
 int main(int argc, char *argv[])
 {
     opts_init(&g_opts);
@@ -103,6 +132,10 @@ int main(int argc, char *argv[])
     tcp_client_t aprsis;
     kiss_decoder_t decoder;
     ax25_packet_t packet;
+    udp_server_t udp_kiss_server;
+    udp_server_t udp_tnc2_server;
+    bool udp_kiss_enabled = false;
+    bool udp_tnc2_enabled = false;
 
     char buf_data[READ_BUF_SIZE];
     buffer_t buf = {
@@ -112,6 +145,9 @@ int main(int argc, char *argv[])
 
     line_reader_t aprsis_line_reader;
     line_reader_init(&aprsis_line_reader, aprsis_line_callback);
+
+    line_reader_t udp_line_reader;
+    line_reader_init(&udp_line_reader, udp_line_callback);
 
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
@@ -148,6 +184,22 @@ int main(int argc, char *argv[])
     int tnc_fd = (conn.type == CONNECTION_TCP) ? conn.client.tcp.fd : conn.client.uds.fd;
     socket_poller_add(&poller, tnc_fd, POLLER_EV_IN);
     socket_poller_add(&poller, aprsis.fd, POLLER_EV_IN);
+
+    if (g_opts.udp_kiss_port > 0)
+    {
+        EXITIF(udp_server_init(&udp_kiss_server, g_opts.udp_kiss_port, 0) < 0, -1,
+               "failed to listen for UDP KISS input on port %d", g_opts.udp_kiss_port);
+        socket_poller_add(&poller, udp_kiss_server.fd, POLLER_EV_IN);
+        udp_kiss_enabled = true;
+    }
+
+    if (g_opts.udp_tnc2_port > 0)
+    {
+        EXITIF(udp_server_init(&udp_tnc2_server, g_opts.udp_tnc2_port, 0) < 0, -1,
+               "failed to listen for UDP TNC2 input on port %d", g_opts.udp_tnc2_port);
+        socket_poller_add(&poller, udp_tnc2_server.fd, POLLER_EV_IN);
+        udp_tnc2_enabled = true;
+    }
 
     LOG("connected, waiting for data...");
 
@@ -189,11 +241,31 @@ int main(int argc, char *argv[])
             for (int i = 0; i < len; i++)
                 line_reader_process(&aprsis_line_reader, buf_data[i]);
         }
+
+        if (udp_kiss_enabled && socket_poller_is_ready(&poller, udp_kiss_server.fd))
+        {
+            int len = udp_server_listen(&udp_kiss_server, &buf);
+            for (int i = 0; i < len; i++)
+                if (packet_decode(&decoder, buf_data[i], &packet))
+                    udp_packet_callback(&packet);
+        }
+
+        if (udp_tnc2_enabled && socket_poller_is_ready(&poller, udp_tnc2_server.fd))
+        {
+            int len = udp_server_listen(&udp_tnc2_server, &buf);
+            for (int i = 0; i < len; i++)
+                line_reader_process(&udp_line_reader, buf_data[i]);
+        }
     }
 
 SHUTDOWN_ALL:
     LOG("shutting down...");
     tcp_client_free(&aprsis);
+
+    if (udp_kiss_enabled)
+        udp_server_free(&udp_kiss_server);
+    if (udp_tnc2_enabled)
+        udp_server_free(&udp_tnc2_server);
 
 SHUTDOWN_TNC:
     connection_free(&conn);
