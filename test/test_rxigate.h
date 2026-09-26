@@ -16,6 +16,8 @@ void test_prepare_for_rxigate_basic()
     ax25_addr_init_with(&packet.destination, "APRS", 0, false);
     ax25_addr_init_with(&packet.source, "N0CALL", 0, false);
     packet.path_len = 0;
+    packet.info[0] = '>';
+    packet.info_len = 1;
 
     prepare_for_rx_igate(&packet);
 
@@ -34,6 +36,8 @@ void test_prepare_for_rxigate_with_relays()
     ax25_addr_init_with(&packet.path[0], "W1AW", 4, false);
     packet.path[0].last = true;
     packet.path_len = 1;
+    packet.info[0] = '>';
+    packet.info_len = 1;
 
     prepare_for_rx_igate(&packet);
 
@@ -57,6 +61,8 @@ void test_prepare_for_rxigate_max_path()
         packet.path[i].last = (i == AX25_MAX_PATH_LEN - 1);
     }
     packet.path_len = AX25_MAX_PATH_LEN;
+    packet.info[0] = '>';
+    packet.info_len = 1;
 
     prepare_for_rx_igate(&packet);
 
@@ -72,6 +78,8 @@ void test_prepare_for_rxigate_empty_path()
     ax25_addr_init_with(&packet.destination, "APRS", 0, false);
     ax25_addr_init_with(&packet.source, "N0CALL", 0, false);
     packet.path_len = 0;
+    packet.info[0] = '>';
+    packet.info_len = 1;
 
     prepare_for_rx_igate(&packet);
 
