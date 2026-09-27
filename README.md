@@ -58,6 +58,7 @@ axigate --config axigate.conf
 | `--is-port=PORT` | APRS-IS port (default: 14580) |
 | `--is-filter=FILTER` | APRS-IS filter string |
 | `--is-passcode=N` | APRS-IS passcode (default: -1) |
+| `--is-keepalive=N` | Minimum seconds between APRS-IS keepalive logins (default: 300, 0 = off) |
 | `--udp-kiss-listen=PORT` | UDP port listening for KISS packets to gate to APRS-IS (default: off) |
 | `--udp-tnc2-listen=PORT` | UDP port listening for TNC2 packets to gate to APRS-IS (default: off) |
 | `-C, --call=CALL` | Gateway callsign |
@@ -86,6 +87,7 @@ is-host=rotate.aprs2.net
 is-port=14580
 is-filter=m/20
 is-passcode=-1
+# is-keepalive=300  # minimum seconds between keepalive logins, 0 = off
 
 # UDP injection inputs (0 = off); requires rf-to-is=true
 # udp-kiss-listen=0

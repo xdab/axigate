@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <signal.h>
 #include <string.h>
+#include <time.h>
 #include <common.h>
 #include <buffer.h>
 #include <tcp.h>
@@ -22,6 +23,7 @@ static volatile sig_atomic_t g_shutdown_requested = 0;
 static connection_t *g_tnc = NULL;
 static tcp_client_t *g_aprsis = NULL;
 static bool g_aprsis_logged_in = false;
+static time_t g_last_keepalive = 0;
 ax25_addr_t g_igate_call;
 options_t g_opts;
 
@@ -33,9 +35,6 @@ static void signal_handler(int sig)
 
 static void aprsis_send_login(void)
 {
-    if (g_aprsis_logged_in)
-        return;
-
     char login_str[256];
     buffer_t login_buf = {
         .data = login_str,
@@ -45,8 +44,22 @@ static void aprsis_send_login(void)
     aprsis_build_login(g_opts.call, g_opts.is_passcode, g_opts.is_filter, &login_buf);
     tcp_client_send(g_aprsis, &login_buf);
     g_aprsis_logged_in = true;
+    g_last_keepalive = time(NULL);
 
     LOG("T %.*s", login_buf.size - 2, login_buf.data);
+}
+
+static void aprsis_keepalive(void)
+{
+    if (!g_aprsis_logged_in || g_opts.is_keepalive <= 0)
+        return;
+
+    time_t now = time(NULL);
+    if (now - g_last_keepalive < g_opts.is_keepalive)
+        return;
+
+    LOGV("sending keepalive after %d s", (int)(now - g_last_keepalive));
+    aprsis_send_login();
 }
 
 static void aprsis_line_callback(const buffer_t *line_buf)
@@ -56,7 +69,8 @@ static void aprsis_line_callback(const buffer_t *line_buf)
 
     if (line_buf->data[0] == '#')
     {
-        aprsis_send_login();
+        if (!g_aprsis_logged_in)
+            aprsis_send_login();
         return;
     }
 
@@ -205,6 +219,8 @@ int main(int argc, char *argv[])
 
     while (!g_shutdown_requested)
     {
+        aprsis_keepalive();
+
         int ready = socket_poller_wait(&poller, 1000);
         if (ready < 0)
         {

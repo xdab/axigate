@@ -13,6 +13,7 @@ void opts_init(options_t *opts)
     opts->is_host[0] = '\0';
     opts->is_port = 0;
     opts->is_filter[0] = '\0';
+    opts->is_keepalive = OPT_IS_KEEPALIVE_UNSET;
     opts->udp_kiss_port = 0;
     opts->udp_tnc2_port = 0;
 
@@ -31,6 +32,7 @@ void opts_defaults(options_t *opts)
     REPLACE_IF_a_WITH_b(opts->port, 0, 8144);
     REPLACE_IF_a_WITH_b(opts->is_port, 0, 14580);
     REPLACE_IF_a_WITH_b(opts->is_passcode, 0, OPT_DEFAULT_IS_PASSCODE);
+    REPLACE_IF_a_WITH_b(opts->is_keepalive, OPT_IS_KEEPALIVE_UNSET, OPT_DEFAULT_IS_KEEPALIVE);
 
     if (opts->is_host[0] == '\0')
         strncpy(opts->is_host, "rotate.aprs2.net", sizeof(opts->is_host) - 1);

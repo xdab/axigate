@@ -14,6 +14,7 @@ static struct argp_option options[] = {
     {OPT_IS_PORT, OPT_SHORT_IS_PORT, "PORT", 0, "APRS-IS port (default: 14580)", 1},
     {OPT_IS_FILTER, OPT_SHORT_IS_FILTER, "FILTER", 0, "APRS-IS filter string", 1},
     {OPT_IS_PASSCODE, OPT_SHORT_IS_PASSCODE, "PASSCDE", 0, "APRS-IS passcode (default: -1)", 1},
+    {OPT_IS_KEEPALIVE, OPT_SHORT_IS_KEEPALIVE, "SECONDS", 0, "Minimum seconds between APRS-IS keepalives (default: 300, 0 = off)", 1},
 
     {OPT_UDP_KISS_LISTEN, OPT_SHORT_UDP_KISS_LISTEN, "PORT", 0, "UDP port listening for KISS packets to gate to APRS-IS", 1},
     {OPT_UDP_TNC2_LISTEN, OPT_SHORT_UDP_TNC2_LISTEN, "PORT", 0, "UDP port listening for TNC2 packets to gate to APRS-IS", 1},
@@ -57,6 +58,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
         break;
     case OPT_SHORT_IS_PASSCODE:
         opts->is_passcode = atoi(arg);
+        break;
+    case OPT_SHORT_IS_KEEPALIVE:
+        opts->is_keepalive = atoi(arg);
         break;
     case OPT_SHORT_UDP_KISS_LISTEN:
         opts->udp_kiss_port = atoi(arg);

@@ -39,6 +39,7 @@ void opts_parse_conf_file(options_t *opts, const char *filename)
         strncpy(opts->is_filter, val, sizeof(opts->is_filter) - 1);
     opts->is_port = conf_get_int_or_default(&conf, OPT_IS_PORT, opts->is_port);
     opts->is_passcode = conf_get_int_or_default(&conf, OPT_IS_PASSCODE, opts->is_passcode);
+    opts->is_keepalive = conf_get_int_or_default(&conf, OPT_IS_KEEPALIVE, opts->is_keepalive);
 
     // UDP injection inputs
     opts->udp_kiss_port = conf_get_int_or_default(&conf, OPT_UDP_KISS_LISTEN, opts->udp_kiss_port);
